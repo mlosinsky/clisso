@@ -1,6 +1,5 @@
 go 1.21.6
 
-// enables getting ssoproxy and ssoclient from subfolders
 use (
 	./e2e_tests
 	./examples/cli
