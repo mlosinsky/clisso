@@ -3,6 +3,7 @@ package ssoclient
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,23 +11,27 @@ import (
 	"strings"
 )
 
+type oidcTokensEvent struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 const EVENT_AUTH_URL = "auth-url"
 const EVENT_OIDC_TOKENS = "oidc-tokens"
 const EVENT_ERROR = "error"
 
+// Starts the login process using a proxy server with handlers from ssoproxy.
+// The proxy first returns a configured login URL that has to be used in order for the login to succeed.
+// After successful login OIDC access and refresh tokens are returned.
 func LoginWithOIDCProxy(
 	proxyLoginURL string,
 	onLoginURLReceived func(loginURL string),
 ) (accessToken, refreshToken string, err error) {
-	req, err := http.NewRequest("GET", proxyLoginURL, nil)
-	if err != nil {
-		return "", "", errors.Join(errors.New("failed to create HTTP login request"), err)
-	}
-	res, err := http.DefaultClient.Do(req)
+	res, err := http.Get(proxyLoginURL)
 	if err != nil {
 		return "", "", errors.Join(errors.New("failed to execute HTTP login request"), err)
 	}
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		return "", "", fmt.Errorf("HTTP login response status was %d, expected 200", res.StatusCode)
 	}
 	defer res.Body.Close()
@@ -36,9 +41,12 @@ func LoginWithOIDCProxy(
 			if event == EVENT_AUTH_URL {
 				onLoginURLReceived(data)
 			} else if event == EVENT_OIDC_TOKENS {
-				// TODO: parse JSON
-				accessToken = "access"
-				refreshToken = "refresh"
+				var tokensEvent oidcTokensEvent
+				if err := json.Unmarshal([]byte(data), &tokensEvent); err != nil {
+					return errors.New("received access and refresh token in invalid format")
+				}
+				accessToken = tokensEvent.AccessToken
+				refreshToken = tokensEvent.RefreshToken
 				return nil
 			} else if event == EVENT_ERROR {
 				return fmt.Errorf("received error '%s'", data)
@@ -95,7 +103,7 @@ func consumeSSEFromHTTPEventStream(
 	}
 }
 
-// parses Server-Sent Events (SSE) event and validates its structure.
+// Parses Server-Sent Events (SSE) event and validates its structure.
 func parseSSEEvent(rawEvent string) (event, data string, err error) {
 	parts := strings.Split(rawEvent, "\n")
 	if len(parts) != 2 {
