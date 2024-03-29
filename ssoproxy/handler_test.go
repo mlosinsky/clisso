@@ -38,13 +38,14 @@ func TestOIDCLoginHandlerSuccessfulLogin(t *testing.T) {
 				reqId := loginURL.Query().Get("state")
 				assert.NotEmpty(t, reqId)
 				// mock a redirect from IdP
-				context.onLoginSuccess(reqId, "mock-access-token", "mock-refresh-token")
+				context.onLoginSuccess(reqId, "mock-access-token", "mock-refresh-token", 600)
 			} else if event == "oidc-tokens" && eventCounter == 1 {
 				var tokensEvent tokensEvent
 				err := json.Unmarshal([]byte(data), &tokensEvent)
 				assert.NoError(t, err, "Access and refresh token could not be deserialized")
 				assert.Equal(t, "mock-access-token", tokensEvent.AccessToken)
 				assert.Equal(t, "mock-refresh-token", tokensEvent.RefreshToken)
+				assert.Equal(t, 600, tokensEvent.Expiration)
 			} else {
 				t.Errorf("Received unexpected event type '%s' as %d. event", event, eventCounter)
 			}
@@ -149,7 +150,7 @@ func TestOIDCRedirectHandlerRedirectAfterSuccessfulLogin(t *testing.T) {
 	context := NewContext(oidcConfig)
 	context.SuccessRedirectURL = "http://localhost:8001/logged-in"
 	server := httptest.NewServer(OIDCRedirectHandler(context))
-	go context.initiateLogin("12345678", func(accessToken, refreshToken string, err error) {})
+	go context.initiateLogin("12345678", func(loginResult *loginResult) {})
 
 	// don't follow redirects
 	client := &http.Client{
@@ -177,7 +178,7 @@ func TestOIDCRedirectHandlerRedirectAfterFailedLogin(t *testing.T) {
 	context := NewContext(oidcConfig)
 	context.FailedRedirectURL = "http://localhost:8001/logged-in"
 	server := httptest.NewServer(OIDCRedirectHandler(context))
-	go context.initiateLogin("12345678", func(accessToken, refreshToken string, err error) {})
+	go context.initiateLogin("12345678", func(loginResult *loginResult) {})
 
 	// don't follow redirects
 	client := &http.Client{
@@ -205,7 +206,7 @@ func TestOIDCRedirectHandlerWontRedirectByDefault(t *testing.T) {
 
 	context := NewContext(oidcConfig)
 	server := httptest.NewServer(OIDCRedirectHandler(context))
-	go context.initiateLogin("12345678", func(accessToken, refreshToken string, err error) {})
+	go context.initiateLogin("12345678", func(loginResult *loginResult) {})
 
 	// don't follow redirects
 	client := &http.Client{
@@ -234,7 +235,7 @@ func TestOIDCRedirectHandlerReturnsErrorOnExpiredRequestId(t *testing.T) {
 	context := NewContext(oidcConfig)
 	context.LoginTimeout = time.Millisecond * 100
 	server := httptest.NewServer(OIDCRedirectHandler(context))
-	go context.initiateLogin("11111111", func(accessToken, refreshToken string, err error) {})
+	go context.initiateLogin("11111111", func(loginResult *loginResult) {})
 
 	time.Sleep(time.Millisecond * 150) // wait for login session to time out
 	res, _ := http.Get(fmt.Sprint(server.URL, "?state=11111111&code=mock-auth-code"))

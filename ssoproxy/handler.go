@@ -14,9 +14,17 @@ import (
 type tokensEvent struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+	Expiration   int    `json:"expiration"`
+}
+
+type tokenResponse struct {
+	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int    `json:"expires_in"`
 }
 
 const reqIdLength = 8
+const reqIdLogArg = "req-id"
 
 const eventAuthURL = "auth-url"
 const eventOIDCTokens = "oidc-tokens"
@@ -36,33 +44,42 @@ func OIDCLoginHandler(ctx *Context) http.Handler {
 
 		reqId, err := generateReqId()
 		if err != nil {
+			ctx.Logger.Error(fmt.Sprintf("Failed to generate request id: %v", err))
 			sendSSEEvent(w, ctx, "Failed to generate random request id", eventError)
 			return
 		}
 
 		authUrl, err := url.Parse(ctx.config.AuthorizationURI)
 		if err != nil {
+			ctx.Logger.Warn(fmt.Sprintf("Invalid OIDC authorization URI: %s", ctx.config.AuthorizationURI))
 			sendSSEEvent(w, ctx, "Invalid authorization URL", eventError)
 			return
 		}
-		// ctx.onLoginInitiated(reqId)
 		query := authUrl.Query()
 		query.Set("state", reqId)
 		authUrl.RawQuery = query.Encode()
+		ctx.Logger.Info("Sending OIDC authorization URI to client", reqIdLogArg, reqId)
 		sendSSEEvent(w, ctx, authUrl.String(), eventAuthURL)
 
 		// Wait for redirect from Identity Provider
-		ctx.initiateLogin(reqId, func(access, refresh string, err error) {
-			if err != nil {
-				sendSSEEvent(w, ctx, fmt.Sprintf("OIDC login failed, reason: %s", err.Error()), eventError)
+		ctx.initiateLogin(reqId, func(loginResult *loginResult) {
+			ctx.Logger.Info("Received login result from OIDC redirect handler", reqIdLogArg, reqId)
+			if loginResult.err != nil {
+				ctx.Logger.Warn(fmt.Sprintf("OIDC login failed: %v", err), reqIdLogArg, reqId)
+				sendSSEEvent(w, ctx, fmt.Sprintf("OIDC login failed, reason: %v", loginResult.err), eventError)
 				return
 			}
-			eventData, err := json.Marshal(tokensEvent{AccessToken: access, RefreshToken: refresh})
+			eventData, err := json.Marshal(tokensEvent{
+				AccessToken:  loginResult.accessToken,
+				RefreshToken: loginResult.refreshToken,
+				Expiration:   loginResult.expiration,
+			})
 			if err != nil {
+				ctx.Logger.Error(fmt.Sprintf("Could not marshal login result event to JSON: %v", err), reqIdLogArg, reqId)
 				sendSSEEvent(w, ctx, "Failed to generate token event", eventError)
 				return
 			}
-			ctx.Logger.Info("Login endpoint received OIDC tokens from IdP")
+			ctx.Logger.Info("Sending successful login result to client", reqIdLogArg, reqId)
 			sendSSEEvent(w, ctx, string(eventData), eventOIDCTokens)
 		})
 	})
@@ -73,6 +90,8 @@ func OIDCLoginHandler(ctx *Context) http.Handler {
 func OIDCRedirectHandler(ctx *Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// uses a small middleware for error handling and redirecting
+		reqId := r.URL.Query().Get("state")
+		ctx.Logger.Info("Received OIDC login redirect", reqIdLogArg, reqId)
 		statusCode, err := func(w http.ResponseWriter, r *http.Request) (int, error) {
 			if r.Method != http.MethodGet {
 				return http.StatusMethodNotAllowed, fmt.Errorf("HTTP method %s is not allowed", r.Method)
@@ -82,38 +101,31 @@ func OIDCRedirectHandler(ctx *Context) http.Handler {
 				return http.StatusBadRequest, errors.New("OIDC URL query parameter 'code' was expected, but is missing")
 			}
 			reqId := r.URL.Query().Get("state")
-			ctx.Logger.Debug(fmt.Sprintf("Request id received in OIDC login redirect: %s", reqId))
 			authorizationCode := r.URL.Query().Get("code")
-			tokenResponse, err := oidcGetTokens(authorizationCode, ctx.config)
+			tokenRes, err := oidcGetTokens(authorizationCode, ctx.config)
 			if err != nil {
 				ctx.onLoginError(reqId, errors.New("failed to retrieve tokens from authorization code"))
-				return http.StatusInternalServerError, errors.New("failed to retrieve tokens from authorization code")
+				return http.StatusInternalServerError, errors.Join(errors.New("failed to retrieve tokens from authorization code"), err)
 			}
-			if err = ctx.onLoginSuccess(reqId, tokenResponse.AccessToken, tokenResponse.RefreshToken); err != nil {
+			if err = ctx.onLoginSuccess(reqId, tokenRes.AccessToken, tokenRes.RefreshToken, tokenRes.ExpiresIn); err != nil {
 				return http.StatusBadRequest, errors.New("received request id does not exist in context, user's login attemt probably timed out")
 			}
-			ctx.Logger.Info("Successfully finished handling OIDC login redirect")
 			return http.StatusOK, nil
 		}(w, r)
 
 		if statusCode >= http.StatusInternalServerError {
-			ctx.Logger.Error(err.Error())
+			ctx.Logger.Error(fmt.Sprintf("OIDC redirect ended with error: %v", err), reqIdLogArg, reqId)
 		} else if statusCode != http.StatusOK {
-			ctx.Logger.Warn(err.Error())
+			ctx.Logger.Warn(fmt.Sprintf("OIDC redirect ended with error: %v", err), reqIdLogArg, reqId)
+		} else {
+			ctx.Logger.Info("Successfully finished handling OIDC login redirect", reqIdLogArg, reqId)
 		}
-		if statusCode >= http.StatusBadRequest && ctx.FailedRedirectURL == "" {
-			http.Error(w, err.Error(), statusCode)
-		} else if statusCode >= http.StatusBadRequest {
+		if statusCode >= http.StatusBadRequest && ctx.FailedRedirectURL != "" {
 			http.Redirect(w, r, ctx.FailedRedirectURL, http.StatusPermanentRedirect)
-		} else if ctx.SuccessRedirectURL != "" {
+		} else if statusCode >= http.StatusOK && ctx.SuccessRedirectURL != "" {
 			http.Redirect(w, r, ctx.SuccessRedirectURL, http.StatusPermanentRedirect)
 		}
 	})
-}
-
-type tokenResponse struct {
-	RefreshToken string `json:"refresh_token"`
-	AccessToken  string `json:"access_token"`
 }
 
 // Gets access and refresh tokens from OIDC provider
@@ -124,14 +136,13 @@ func oidcGetTokens(authorizationCode string, config OIDCConfig) (*tokenResponse,
 	data.Set("client_secret", config.ClientSecret)
 	data.Set("redirect_uri", config.RedirectURI)
 	data.Set("grant_type", "authorization_code")
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/token", config.BaseURI), strings.NewReader(data.Encode()))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/token", config.BaseURI), strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
-	res, err := client.Do(request)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

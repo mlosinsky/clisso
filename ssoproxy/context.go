@@ -34,6 +34,7 @@ type Context struct {
 type loginResult struct {
 	accessToken  string
 	refreshToken string
+	expiration   int
 	err          error
 }
 
@@ -49,7 +50,7 @@ func NewContext(oidcConfig OIDCConfig) *Context {
 	}
 }
 
-func (ctx *Context) initiateLogin(reqId string, handler func(accessToken, refreshToken string, err error)) {
+func (ctx *Context) initiateLogin(reqId string, handler func(*loginResult)) {
 	ctx.requestsMutex.Lock()
 	ctx.requests[reqId] = make(chan *loginResult)
 	ctx.requestsMutex.Unlock()
@@ -57,16 +58,16 @@ func (ctx *Context) initiateLogin(reqId string, handler func(accessToken, refres
 	defer cancel()
 	select {
 	case loginResult := <-ctx.requests[reqId]:
-		handler(loginResult.accessToken, loginResult.refreshToken, loginResult.err)
+		handler(loginResult)
 	case <-timeoutCtx.Done():
 		ctx.Logger.Warn("User's login session timed out")
-		handler("", "", errors.New("user's login session timed out"))
+		handler(&loginResult{err: errors.New("user's login session timed out")})
 	}
 	delete(ctx.requests, reqId)
 }
 
 // Writes tokens to session of request id, if there is no such session returns error
-func (ctx *Context) onLoginSuccess(reqId, accessToken, refreshToken string) error {
+func (ctx *Context) onLoginSuccess(reqId, accessToken, refreshToken string, expiration int) error {
 	if _, contains := ctx.requests[reqId]; !contains {
 		return errors.New("user's session id does not exist in OIDC context")
 	}
@@ -74,6 +75,7 @@ func (ctx *Context) onLoginSuccess(reqId, accessToken, refreshToken string) erro
 	ctx.requests[reqId] <- &loginResult{
 		accessToken:  accessToken,
 		refreshToken: refreshToken,
+		expiration:   expiration,
 	}
 	ctx.requestsMutex.Unlock()
 	return nil
