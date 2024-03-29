@@ -11,14 +11,15 @@ import (
 	"strings"
 )
 
-type oidcTokensEvent struct {
+type proxyTokensEvent struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+	Expiration   int    `json:"expiration"`
 }
 
-const EVENT_AUTH_URL = "auth-url"
-const EVENT_OIDC_TOKENS = "oidc-tokens"
-const EVENT_ERROR = "error"
+const eventAuthURL = "auth-url"
+const eventOIDCTokens = "oidc-tokens"
+const eventError = "error"
 
 // Starts the login process using a proxy server with handlers from ssoproxy.
 // The proxy first returns a configured login URL that has to be used in order for the login to succeed.
@@ -26,29 +27,26 @@ const EVENT_ERROR = "error"
 func LoginWithOIDCProxy(
 	proxyLoginURL string,
 	onLoginURLReceived func(loginURL string),
-) (accessToken, refreshToken string, err error) {
+) (*LoginResult, error) {
 	res, err := http.Get(proxyLoginURL)
 	if err != nil {
-		return "", "", errors.Join(errors.New("failed to execute HTTP login request"), err)
+		return nil, errors.Join(errors.New("failed to execute HTTP login request"), err)
 	}
 	if res.StatusCode != http.StatusOK {
-		return "", "", fmt.Errorf("HTTP login response status was %d, expected 200", res.StatusCode)
+		return nil, fmt.Errorf("HTTP login response status was %d, expected 200", res.StatusCode)
 	}
 	defer res.Body.Close()
+	var tokenEvent proxyTokensEvent
 	err = consumeSSEFromHTTPEventStream(
 		res.Body,
 		func(event, data string) error {
-			if event == EVENT_AUTH_URL {
+			if event == eventAuthURL {
 				onLoginURLReceived(data)
-			} else if event == EVENT_OIDC_TOKENS {
-				var tokensEvent oidcTokensEvent
-				if err := json.Unmarshal([]byte(data), &tokensEvent); err != nil {
+			} else if event == eventOIDCTokens {
+				if err := json.Unmarshal([]byte(data), &tokenEvent); err != nil {
 					return errors.New("received access and refresh token in invalid format")
 				}
-				accessToken = tokensEvent.AccessToken
-				refreshToken = tokensEvent.RefreshToken
-				return nil
-			} else if event == EVENT_ERROR {
+			} else if event == eventError {
 				return fmt.Errorf("received error '%s'", data)
 			} else {
 				return fmt.Errorf("encountered unkown login event '%s'", event)
@@ -56,7 +54,11 @@ func LoginWithOIDCProxy(
 			return nil
 		},
 	)
-	return accessToken, refreshToken, err
+	return &LoginResult{
+		AccessToken:  tokenEvent.AccessToken,
+		RefreshToken: tokenEvent.RefreshToken,
+		Expiration:   tokenEvent.Expiration,
+	}, err
 }
 
 // Takes an HTTP response body of a response with text/event-stream Content-Type
