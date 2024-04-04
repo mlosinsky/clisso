@@ -32,8 +32,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      # matrix: { dir: ['ssoclient', 'ssoproxy'] }
-      matrix: { dir: ['ssoproxy'] }
+      matrix: { dir: ['ssoclient', 'ssoproxy'] }
     steps:
     - uses: actions/checkout@v4
       with:
@@ -54,13 +53,13 @@ jobs:
     - name: test
       working-directory: ${{ matrix.dir }}
       run: |
-        go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage-${{ matrix.dir }}.out 2>&1 | tee /tmp/gotest.log | gotestfmt
-        go tool cover -func=coverage-${{ matrix.dir }}.out -o=coverage-${{ matrix.dir }}.out
+        go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage.out 2>&1 | tee /tmp/gotest.log | gotestfmt
+        go tool cover -func=coverage.out -o=coverage.out
     
     - name: update badge
       uses: tj-actions/coverage-badge-go@v2
       with:
-        filename: coverage-${{ matrix.dir }}.out
+        filename: coverage.out
         text: ${{ matrix.dir }}
 
     - name: verify badge changed
