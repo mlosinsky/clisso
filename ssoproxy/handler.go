@@ -26,7 +26,7 @@ type tokenResponse struct {
 const reqIdLength = 8
 const reqIdLogArg = "req-id"
 
-const eventAuthURL = "auth-url"
+const eventAuthURI = "auth-uri"
 const eventOIDCTokens = "oidc-tokens"
 const eventError = "error"
 
@@ -34,7 +34,7 @@ const eventError = "error"
 // writes Server-Sent Events to it during the login process.
 // OIDCRedirectHandler must be used with this handler.
 //
-// Events can be of 3 types: auth-url, oidc-tokens and error.
+// Events can be of 3 types: auth-uri, oidc-tokens and error.
 func OIDCLoginHandler(ctx *Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set proper SSE headers
@@ -49,17 +49,17 @@ func OIDCLoginHandler(ctx *Context) http.Handler {
 			return
 		}
 
-		authUrl, err := url.Parse(ctx.config.AuthorizationURI)
+		authURI, err := url.Parse(ctx.config.AuthorizationURI)
 		if err != nil {
 			ctx.Logger.Warn(fmt.Sprintf("Invalid OIDC authorization URI: %s", ctx.config.AuthorizationURI))
-			sendSSEEvent(w, ctx, "Invalid authorization URL", eventError)
+			sendSSEEvent(w, ctx, "Invalid authorization URI", eventError)
 			return
 		}
-		query := authUrl.Query()
+		query := authURI.Query()
 		query.Set("state", reqId)
-		authUrl.RawQuery = query.Encode()
+		authURI.RawQuery = query.Encode()
 		ctx.Logger.Info("Sending OIDC authorization URI to client", reqIdLogArg, reqId)
-		sendSSEEvent(w, ctx, authUrl.String(), eventAuthURL)
+		sendSSEEvent(w, ctx, authURI.String(), eventAuthURI)
 
 		// Wait for redirect from Identity Provider
 		ctx.initiateLogin(reqId, func(loginResult *loginResult) {
@@ -120,10 +120,10 @@ func OIDCRedirectHandler(ctx *Context) http.Handler {
 		} else {
 			ctx.Logger.Info("Successfully finished handling OIDC login redirect", reqIdLogArg, reqId)
 		}
-		if statusCode >= http.StatusBadRequest && ctx.FailedRedirectURL != "" {
-			http.Redirect(w, r, ctx.FailedRedirectURL, http.StatusPermanentRedirect)
-		} else if statusCode >= http.StatusOK && ctx.SuccessRedirectURL != "" {
-			http.Redirect(w, r, ctx.SuccessRedirectURL, http.StatusPermanentRedirect)
+		if statusCode >= http.StatusBadRequest && ctx.FailedRedirectURI != "" {
+			http.Redirect(w, r, ctx.FailedRedirectURI, http.StatusPermanentRedirect)
+		} else if statusCode >= http.StatusOK && ctx.SuccessRedirectURI != "" {
+			http.Redirect(w, r, ctx.SuccessRedirectURI, http.StatusPermanentRedirect)
 		}
 	})
 }

@@ -17,18 +17,18 @@ type proxyTokensEvent struct {
 	Expiration   int    `json:"expiration"`
 }
 
-const eventAuthURL = "auth-url"
+const eventAuthURI = "auth-uri"
 const eventOIDCTokens = "oidc-tokens"
 const eventError = "error"
 
 // Starts the login process using a proxy server with handlers from ssoproxy.
-// The proxy first returns a configured login URL that has to be used in order for the login to succeed.
+// The proxy first returns a configured login URI that has to be used in order for the login to succeed.
 // After successful login OIDC access and refresh tokens are returned.
 func LoginWithOIDCProxy(
-	proxyLoginURL string,
-	onLoginURLReceived func(loginURL string),
+	proxyLoginURI string,
+	onLoginURIReceived func(loginURI string),
 ) (*LoginResult, error) {
-	res, err := http.Get(proxyLoginURL)
+	res, err := http.Get(proxyLoginURI)
 	if err != nil {
 		return nil, errors.Join(errors.New("failed to execute HTTP login request"), err)
 	}
@@ -40,8 +40,8 @@ func LoginWithOIDCProxy(
 	err = consumeSSEFromHTTPEventStream(
 		res.Body,
 		func(event, data string) error {
-			if event == eventAuthURL {
-				onLoginURLReceived(data)
+			if event == eventAuthURI {
+				onLoginURIReceived(data)
 			} else if event == eventOIDCTokens {
 				if err := json.Unmarshal([]byte(data), &tokenEvent); err != nil {
 					return errors.New("received access and refresh token in invalid format")

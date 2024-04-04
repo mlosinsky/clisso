@@ -32,10 +32,10 @@ func TestOIDCLoginHandlerSuccessfulLogin(t *testing.T) {
 	internal.ConsumeSSEFromHTTPEventStream(
 		res.Body,
 		func(event, data string) error {
-			if event == "auth-url" && eventCounter == 0 {
-				loginURL, err := url.Parse(data)
+			if event == "auth-uri" && eventCounter == 0 {
+				loginURI, err := url.Parse(data)
 				assert.NoError(t, err)
-				reqId := loginURL.Query().Get("state")
+				reqId := loginURI.Query().Get("state")
 				assert.NotEmpty(t, reqId)
 				// mock a redirect from IdP
 				context.onLoginSuccess(reqId, "mock-access-token", "mock-refresh-token", 600)
@@ -75,10 +75,10 @@ func TestOIDCLoginHandlerLoginError(t *testing.T) {
 	internal.ConsumeSSEFromHTTPEventStream(
 		res.Body,
 		func(event, data string) error {
-			if event == "auth-url" && eventCounter == 0 {
-				loginURL, err := url.Parse(data)
+			if event == "auth-uri" && eventCounter == 0 {
+				loginURI, err := url.Parse(data)
 				assert.NoError(t, err)
-				reqId := loginURL.Query().Get("state")
+				reqId := loginURI.Query().Get("state")
 				assert.NotEmpty(t, reqId)
 				// mock a redirect from IdP
 				context.onLoginError(reqId, errors.New("mock-oidc-error"))
@@ -116,9 +116,9 @@ func TestOIDCLoginHandlerTimeout(t *testing.T) {
 		res.Body,
 		func(event, data string) error {
 			if event == "auth-url" && eventCounter == 0 {
-				loginURL, err := url.Parse(data)
+				loginURI, err := url.Parse(data)
 				assert.NoError(t, err)
-				reqId := loginURL.Query().Get("state")
+				reqId := loginURI.Query().Get("state")
 				assert.NotEmpty(t, reqId)
 				// wait for login to timeout
 				time.Sleep(150 * time.Millisecond)
@@ -148,7 +148,7 @@ func TestOIDCRedirectHandlerRedirectAfterSuccessfulLogin(t *testing.T) {
 	oidcConfig.BaseURI = mockOIDCServer.URL
 
 	context := NewContext(oidcConfig)
-	context.SuccessRedirectURL = "http://localhost:8001/logged-in"
+	context.SuccessRedirectURI = "http://localhost:8001/logged-in"
 	server := httptest.NewServer(OIDCRedirectHandler(context))
 	go context.initiateLogin("12345678", func(loginResult *loginResult) {})
 
@@ -176,7 +176,7 @@ func TestOIDCRedirectHandlerRedirectAfterFailedLogin(t *testing.T) {
 	oidcConfig.BaseURI = mockOIDCServer.URL
 
 	context := NewContext(oidcConfig)
-	context.FailedRedirectURL = "http://localhost:8001/logged-in"
+	context.FailedRedirectURI = "http://localhost:8001/logged-in"
 	server := httptest.NewServer(OIDCRedirectHandler(context))
 	go context.initiateLogin("12345678", func(loginResult *loginResult) {})
 

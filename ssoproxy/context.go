@@ -24,9 +24,9 @@ type Context struct {
 	// logger for HTTP handlers, does not log any messages by default
 	Logger *slog.Logger
 	// if set users will be redirected to it after login to IdP if the redirect processing was successful, won't redirect by default
-	SuccessRedirectURL string
+	SuccessRedirectURI string
 	// if set users will be redirected to it after login to IdP if the redirect processing failed, won't redirect by default
-	FailedRedirectURL string
+	FailedRedirectURI string
 	// time for user to login to IdP after login was initiated, default 5 minutes
 	LoginTimeout time.Duration
 }
