@@ -113,17 +113,24 @@ func OIDCRedirectHandler(ctx *Context) http.Handler {
 			return http.StatusOK, nil
 		}(w, r)
 
-		if statusCode >= http.StatusInternalServerError {
-			ctx.Logger.Error(fmt.Sprintf("OIDC redirect ended with error: %v", err), reqIdLogArg, reqId)
-		} else if statusCode != http.StatusOK {
-			ctx.Logger.Warn(fmt.Sprintf("OIDC redirect ended with error: %v", err), reqIdLogArg, reqId)
-		} else {
+		if statusCode >= http.StatusBadRequest {
+			if statusCode >= http.StatusInternalServerError {
+				ctx.Logger.Error(fmt.Sprintf("OIDC redirect ended with error (status: %d): %v", statusCode, err), reqIdLogArg, reqId)
+			} else {
+				ctx.Logger.Warn(fmt.Sprintf("OIDC redirect ended with error (status: %d): %v", statusCode, err), reqIdLogArg, reqId)
+			}
+			if ctx.FailedRedirectURI != "" {
+				http.Redirect(w, r, ctx.FailedRedirectURI, http.StatusPermanentRedirect)
+			} else if statusCode >= http.StatusInternalServerError {
+				http.Error(w, "An error was encountered while serving the request", statusCode)
+			} else {
+				http.Error(w, err.Error(), statusCode)
+			}
+		} else if statusCode == http.StatusOK {
 			ctx.Logger.Info("Successfully finished handling OIDC login redirect", reqIdLogArg, reqId)
-		}
-		if statusCode >= http.StatusBadRequest && ctx.FailedRedirectURI != "" {
-			http.Redirect(w, r, ctx.FailedRedirectURI, http.StatusPermanentRedirect)
-		} else if statusCode >= http.StatusOK && ctx.SuccessRedirectURI != "" {
-			http.Redirect(w, r, ctx.SuccessRedirectURI, http.StatusPermanentRedirect)
+			if ctx.SuccessRedirectURI != "" {
+				http.Redirect(w, r, ctx.SuccessRedirectURI, http.StatusPermanentRedirect)
+			}
 		}
 	})
 }
