@@ -56,7 +56,8 @@ jobs:
     #     go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage.out 2>&1 | tee /tmp/gotest.log | gotestfmt
     #     go tool cover -func=coverage.out -o=coverage.out
     
-    - name: Run Test
+    - name: test
+      working-directory: ${{ matrix.dir }}
       run: |
         go test -v ./... -covermode=count -coverprofile=coverage.out
         go tool cover -func=coverage.out -o=coverage.out
