@@ -68,7 +68,7 @@ func ConsumeSSEFromHTTPEventStream(
 func CreateMockOIDCServer(expectedAuthCode, expectedClientId, expectedClientSecret, expectedRedirectURI string) httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
+		_ = r.ParseForm()
 		if r.Form.Get("grant_type") != "authorization_code" {
 			http.Error(w, fmt.Sprintf("Invalid grant_type: %s", r.Form.Get("grant_type")), http.StatusBadRequest)
 		} else if r.Form.Get("code") != expectedAuthCode {
@@ -80,7 +80,7 @@ func CreateMockOIDCServer(expectedAuthCode, expectedClientId, expectedClientSecr
 		} else if r.Form.Get("redirect_uri") != expectedRedirectURI {
 			http.Error(w, fmt.Sprintf("Invalid redirect_uri %s, expected %s", r.Form.Get("redirect_uri"), expectedRedirectURI), http.StatusBadRequest)
 		}
-		w.Write([]byte(`{"access_token":"mock-access-token","refresh_token":"mock-refresh-token"}`))
+		_, _ = w.Write([]byte(`{"access_token":"mock-access-token","refresh_token":"mock-refresh-token"}`))
 	})
 	return *httptest.NewServer(mux)
 }

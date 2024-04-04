@@ -29,7 +29,7 @@ func TestOIDCLoginHandlerSuccessfulLogin(t *testing.T) {
 	defer res.Body.Close()
 
 	eventCounter := 0
-	internal.ConsumeSSEFromHTTPEventStream(
+	_ = internal.ConsumeSSEFromHTTPEventStream(
 		res.Body,
 		func(event, data string) error {
 			if event == "auth-uri" && eventCounter == 0 {
@@ -38,7 +38,7 @@ func TestOIDCLoginHandlerSuccessfulLogin(t *testing.T) {
 				reqId := loginURI.Query().Get("state")
 				assert.NotEmpty(t, reqId)
 				// mock a redirect from IdP
-				context.onLoginSuccess(reqId, "mock-access-token", "mock-refresh-token", 600)
+				_ = context.onLoginSuccess(reqId, "mock-access-token", "mock-refresh-token", 600)
 			} else if event == "oidc-tokens" && eventCounter == 1 {
 				var tokensEvent tokensEvent
 				err := json.Unmarshal([]byte(data), &tokensEvent)
@@ -72,7 +72,7 @@ func TestOIDCLoginHandlerLoginError(t *testing.T) {
 	defer res.Body.Close()
 
 	eventCounter := 0
-	internal.ConsumeSSEFromHTTPEventStream(
+	_ = internal.ConsumeSSEFromHTTPEventStream(
 		res.Body,
 		func(event, data string) error {
 			if event == "auth-uri" && eventCounter == 0 {
@@ -112,7 +112,7 @@ func TestOIDCLoginHandlerTimeout(t *testing.T) {
 	defer res.Body.Close()
 
 	eventCounter := 0
-	internal.ConsumeSSEFromHTTPEventStream(
+	_ = internal.ConsumeSSEFromHTTPEventStream(
 		res.Body,
 		func(event, data string) error {
 			if event == "auth-url" && eventCounter == 0 {

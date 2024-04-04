@@ -47,7 +47,7 @@ jobs:
     - name: test
       working-directory: ${{ matrix.dir }}
       run: |
-        go test -v -json -race ./... -covermode=count -coverprofile=coverage-${{ matrix.dir }}.out
+        go test -v -json -race ./... -covermode=atomic -coverprofile=coverage-${{ matrix.dir }}.out
         go tool cover -func=coverage-${{ matrix.dir }}.out -o=coverage-${{ matrix.dir }}.out
     
     - name: coverage badge
