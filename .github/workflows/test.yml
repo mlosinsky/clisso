@@ -55,7 +55,6 @@ jobs:
       run: |
         go test -v -json ./... -covermode=count -coverprofile=coverage-${{ matrix.dir }}.out 2>&1 | tee /tmp/gotest.log | gotestfmt
         go tool cover -func=coverage-${{ matrix.dir }}.out -o=coverage-${{ matrix.dir }}.out
-        cat coverage-${{ matrix.dir }}.out
     
     - name: update badge
       uses: tj-actions/coverage-badge-go@v2
