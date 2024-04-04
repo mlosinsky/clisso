@@ -44,20 +44,27 @@ jobs:
         go-version: '^1.21'
         check-latest: true
         cache: true
+
+    - name: install gotestfmt
+      uses: GoTestTools/gotestfmt-action@v2
+      with:
+        version: v2.5.0
+
     - name: test
       working-directory: ${{ matrix.dir }}
       # use -race to check possible deadlocks
       run: |
         go test -v -json -race ./... -covermode=atomic -coverprofile=coverage-${{ matrix.dir }}.out 2>&1 | tee /tmp/gotest.log | gotestfmt
         go tool cover -func=coverage-${{ matrix.dir }}.out -o=coverage-${{ matrix.dir }}.out
+        cat coverage-${{ matrix.dir }}.out
     
-    - name: coverage badge
+    - name: update badge
       uses: tj-actions/coverage-badge-go@v2
       with:
         filename: coverage-${{ matrix.dir }}.out
         text: ${{ matrix.dir }}
 
-    - name: verify README.md changed
+    - name: verify badge changed
       uses: tj-actions/verify-changed-files@v16
       id: verify-changed-files
       with:
