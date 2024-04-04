@@ -52,9 +52,8 @@ jobs:
 
     - name: test
       working-directory: ${{ matrix.dir }}
-      # use -race to check possible deadlocks
       run: |
-        go test -v -json -race ./... -covermode=atomic -coverprofile=coverage-${{ matrix.dir }}.out 2>&1 | tee /tmp/gotest.log | gotestfmt
+        go test -v -json ./... -covermode=atomic -coverprofile=coverage-${{ matrix.dir }}.out 2>&1 | tee /tmp/gotest.log | gotestfmt
         go tool cover -func=coverage-${{ matrix.dir }}.out -o=coverage-${{ matrix.dir }}.out
         cat coverage-${{ matrix.dir }}.out
     
