@@ -54,7 +54,8 @@ jobs:
       working-directory: ${{ matrix.dir }}
       run: |
         go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage.out 2>&1 | tee /tmp/gotest.log | gotestfmt
-        go tool cover -func=coverage.out -o=coverage.out
+        go tool cover -func=coverage.out -o=${{ github.workspace }}/coverage.out
+        cat ${{ github.workspace }}/coverage.out
 
     - name: update badge
       uses: tj-actions/coverage-badge-go@v2
