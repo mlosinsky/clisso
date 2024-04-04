@@ -126,13 +126,17 @@ func createMockOIDCServer(expectedAuthCode, expectedClientId, expectedClientSecr
 		} else if r.Form.Get("code") != expectedAuthCode {
 			http.Error(w, fmt.Sprintf("Invalid code %s, expected %s", r.Form.Get("code"), expectedAuthCode), http.StatusBadRequest)
 		} else if r.Form.Get("client_id") != expectedClientId {
-			http.Error(w, fmt.Sprintf("Invalid client_id %s, expected %s", r.Form.Get("client_id"), expectedAuthCode), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("Invalid client_id %s, expected %s", r.Form.Get("client_id"), expectedClientId), http.StatusBadRequest)
 		} else if r.Form.Get("client_secret") != expectedClientSecret {
 			http.Error(w, fmt.Sprintf("Invalid client_secret %s, expected %s", r.Form.Get("client_secret"), expectedClientSecret), http.StatusBadRequest)
 		} else if r.Form.Get("redirect_uri") != expectedRedirectURI {
 			http.Error(w, fmt.Sprintf("Invalid redirect_uri %s, expected %s", r.Form.Get("redirect_uri"), expectedRedirectURI), http.StatusBadRequest)
 		}
-		_, _ = w.Write([]byte(`{"access_token":"mock-access-token","refresh_token":"mock-refresh-token"}`))
+		_, _ = w.Write([]byte(`{
+			"access_token":"mock-access-token",
+			"refresh_token":"mock-refresh-token",
+			"expires_in": 3600
+		}`))
 	})
 	return *httptest.NewServer(mux)
 }
