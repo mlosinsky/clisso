@@ -53,7 +53,7 @@ jobs:
     - name: test
       working-directory: ${{ matrix.dir }}
       run: |
-        go test -v -json ./... -covermode=atomic -coverprofile=coverage-${{ matrix.dir }}.out 2>&1 | tee /tmp/gotest.log | gotestfmt
+        go test -v -json ./... -covermode=count -coverprofile=coverage-${{ matrix.dir }}.out 2>&1 | tee /tmp/gotest.log | gotestfmt
         go tool cover -func=coverage-${{ matrix.dir }}.out -o=coverage-${{ matrix.dir }}.out
         cat coverage-${{ matrix.dir }}.out
     
