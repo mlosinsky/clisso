@@ -1,6 +1,12 @@
 # Go Single Sign-On for Console applications
 
+### Test Coverage
+
+![ssoproxy](https://img.shields.io/badge/ssoproxy-100.0%25-brightgreen)
+![ssoclient](https://img.shields.io/badge/ssoclient-100.0%25-brightgreen)
+
 Features that need to be implemented before v1:
+
 - [ ] write tests for ssoclient and e2e_tests
 - [ ] e2e_test with keycloak and vault
 - [ ] e2e_test with different IdP (not keycloak)
