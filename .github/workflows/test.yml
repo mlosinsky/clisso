@@ -85,6 +85,7 @@ jobs:
 
       - name: update badges
         run: |
+          cat coverage/ssoproxy.out
           TEMP_DIR=$(mktemp -d)
           curl -sf https://gobinaries.com/github.com/AlexBeauchemin/gobadge@v0.3.0 | PREFIX=$TEMP_DIR sh
           $TEMP_DIR/gobadge -filename=../coverage/ssoclient.out -text=ssoclient
