@@ -23,7 +23,7 @@ jobs:
       with:
         go-version: '^1.21'
         check-latest: true
-        cache: true
+        cache-dependency-path: ${{ matrix.dir }}/go.sum
     
     - name: golangci-lint ${{ matrix.dir }}
       uses: golangci/golangci-lint-action@v4.0.0
@@ -38,15 +38,13 @@ jobs:
       fail-fast: false
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # must be set to be able to push
 
     - uses: actions/setup-go@v5
       with:
         # TODO: consider using go-version-file with matrix if go is initialized twice (for each dir)
         go-version: '^1.21'
         check-latest: true
-        cache: true
+        cache-dependency-path: ${{ matrix.dir }}/go.sum
 
     - name: install gotestfmt
       uses: GoTestTools/gotestfmt-action@v2
@@ -57,31 +55,59 @@ jobs:
       working-directory: ${{ matrix.dir }}
       run: |
         go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage.out 2>&1 | tee /tmp/gotest.log | gotestfmt
-        go tool cover -func=coverage.out -o=${{ github.workspace }}/coverage.out
+        go tool cover -func=coverage.out -o=coverage/${{ matrix.dir }}.out
+        cat coverage/${{ matrix.dir }}.out
 
-    - name: update badge
-      uses: tj-actions/coverage-badge-go@v2
+    - uses: actions/upload-artifact@v3
       with:
-        filename: ${{ github.workspace }}/coverage.out
-        text: ${{ matrix.dir }}
+        name: coverage
+        path: coverage/${{ matrix.dir }}.out
 
-    - name: verify badge changed
-      uses: tj-actions/verify-changed-files@v16
-      id: verify-changed-files
-      with:
-        files: README.md
+  update-coverage-badges:
+    name: update coverage badges
+    if: github.ref == 'refs/heads/main'
+    concurrency: # if there is another push to main, cancel in-progress CI
+      group: ${{ github.ref }}
+      cancel-in-progress: true
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # must be set to be able to push
 
-    - name: commit badge
-      if: steps.verify-changed-files.outputs.files_changed == 'true'
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add README.md
-        git commit -m "chore: Updated coverage badge."
+      - name: load test output
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage
+          path: coverage
 
-    - name: push badge
-      if: steps.verify-changed-files.outputs.files_changed == 'true'
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ github.token }}
-        branch: ${{ github.head_ref }}
+      - name: update badges
+        run: |
+          TEMP_DIR=$(mktemp -d)
+          curl -sf https://gobinaries.com/github.com/AlexBeauchemin/gobadge@v0.3.0 | PREFIX=$TEMP_DIR sh
+          $TEMP_DIR/gobadge -filename=../coverage/ssoclient.out -text=ssoclient
+          $TEMP_DIR/gobadge -filename=../coverage/ssoproxy.out -text=ssoproxy
+          rm -rf $TEMP_DIR
+
+      - name: verify badges changed
+        uses: tj-actions/verify-changed-files@v16
+        id: verify-changed-files
+        with:
+          files: README.md
+
+      - name: commit badges
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "chore: Updated coverage badges"
+
+      - name: push badges
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ github.token }}
+          branch: ${{ github.head_ref }}
