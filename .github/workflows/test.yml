@@ -54,8 +54,8 @@ jobs:
     - name: test
       working-directory: ${{ matrix.dir }}
       run: |
-        go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage.out 2>&1 | tee /tmp/gotest.log | gotestfmt
-        go tool cover -func=coverage.out -o=coverage/${{ matrix.dir }}.out
+        go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage/${{ matrix.dir }}.out 2>&1 | tee /tmp/gotest.log | gotestfmt
+        go tool cover -func=coverage/${{ matrix.dir }}.out -o=coverage/${{ matrix.dir }}.out
         cat coverage/${{ matrix.dir }}.out
 
     - uses: actions/upload-artifact@v3
