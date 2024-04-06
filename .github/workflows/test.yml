@@ -8,13 +8,14 @@ on:
     branches: 
       - main
 
-# TODO: if job names don't include dir, set the job name maually
 # TODO: add e2e test ci
 jobs:
   lint:
     runs-on: ubuntu-latest
     strategy:
-      matrix: { dir: ['ssoclient', 'ssoproxy'] }
+      matrix: 
+        dir: ['ssoclient', 'ssoproxy']
+      fail-fast: false
     steps:
     - uses: actions/checkout@v4
 
@@ -32,7 +33,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      matrix: { dir: ['ssoclient', 'ssoproxy'] }
+      matrix: 
+        dir: ['ssoclient', 'ssoproxy']
+      fail-fast: false
     steps:
     - uses: actions/checkout@v4
       with:
@@ -55,7 +58,6 @@ jobs:
       run: |
         go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage.out 2>&1 | tee /tmp/gotest.log | gotestfmt
         go tool cover -func=coverage.out -o=${{ github.workspace }}/coverage.out
-        cat ${{ github.workspace }}/coverage.out
 
     - name: update badge
       uses: tj-actions/coverage-badge-go@v2
