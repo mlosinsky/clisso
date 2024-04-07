@@ -165,7 +165,7 @@ func pollTokensEndpoint(
 		} else if resBody.Error == expiredTokenError {
 			return nil, errors.New("authorization attempt expired")
 		} else if resBody.Error != authorizationPendingError {
-			return nil, fmt.Errorf("received unkown error code %s while polling for access and refresh token", resBody.Error)
+			return nil, fmt.Errorf("received unknown error code %s while polling for access and refresh token", resBody.Error)
 		}
 	}
 	return nil, errors.New("authorization attempt expired")

@@ -108,7 +108,7 @@ func OIDCRedirectHandler(ctx *Context) http.Handler {
 				return http.StatusInternalServerError, errors.Join(errors.New("failed to retrieve tokens from authorization code"), err)
 			}
 			if err = ctx.onLoginSuccess(reqId, tokenRes.AccessToken, tokenRes.RefreshToken, tokenRes.ExpiresIn); err != nil {
-				return http.StatusBadRequest, errors.New("received request id does not exist in context, user's login attemt probably timed out")
+				return http.StatusBadRequest, errors.New("received request id does not exist in context, user's login attempt probably timed out")
 			}
 			return http.StatusOK, nil
 		}(w, r)

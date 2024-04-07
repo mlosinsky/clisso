@@ -49,7 +49,7 @@ func LoginWithOIDCProxy(
 			} else if event == eventError {
 				return fmt.Errorf("received error '%s'", data)
 			} else {
-				return fmt.Errorf("encountered unkown login event '%s'", event)
+				return fmt.Errorf("encountered unknown login event '%s'", event)
 			}
 			return nil
 		},
