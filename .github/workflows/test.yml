@@ -63,6 +63,7 @@ jobs:
   e2e-test:
     name: E2E tests
     runs-on: ubuntu-latest # docker env provided by Github Actions
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
 
