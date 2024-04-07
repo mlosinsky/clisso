@@ -86,12 +86,10 @@ jobs:
 
       - name: update badges
         run: |
-          ls
-          ls -R
           TEMP_DIR=$(mktemp -d)
           curl -sf https://gobinaries.com/github.com/AlexBeauchemin/gobadge@v0.3.0 | PREFIX=$TEMP_DIR sh
-          $TEMP_DIR/gobadge -filename=../ssoclient-coverage.out -text=ssoclient
-          $TEMP_DIR/gobadge -filename=../ssoproxy-coverage.out -text=ssoproxy
+          $TEMP_DIR/gobadge -filename=${{ github.workspace }}/ssoclient-coverage.out -text=ssoclient
+          $TEMP_DIR/gobadge -filename=${{ github.workspace }}/ssoproxy-coverage.out -text=ssoproxy
           rm -rf $TEMP_DIR
 
       - name: verify badges changed
