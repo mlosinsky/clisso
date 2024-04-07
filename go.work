@@ -1,9 +1,0 @@
-go 1.21.6
-
-use (
-	./e2e_tests
-	./examples/cli
-	./examples/proxy
-	./ssoclient
-	./ssoproxy
-)
