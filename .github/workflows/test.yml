@@ -21,9 +21,8 @@ jobs:
 
     - uses: actions/setup-go@v5
       with:
-        go-version: '^1.21'
-        check-latest: true
-        cache-dependency-path: ${{ matrix.dir }}/go.sum
+        go-version-file: ${{ matrix.dir }}/go.mod
+        cache: false
     
     - name: golangci-lint ${{ matrix.dir }}
       uses: golangci/golangci-lint-action@v4.0.0
@@ -41,10 +40,8 @@ jobs:
 
     - uses: actions/setup-go@v5
       with:
-        # TODO: consider using go-version-file with matrix if go is initialized twice (for each dir)
-        go-version: '^1.21'
-        check-latest: true
-        cache-dependency-path: ${{ matrix.dir }}/go.sum
+        go-version-file: ${{ matrix.dir }}/go.mod
+        cache: false
 
     - name: install gotestfmt
       uses: GoTestTools/gotestfmt-action@v2
@@ -93,7 +90,7 @@ jobs:
           rm -rf $TEMP_DIR
 
       - name: verify badges changed
-        uses: tj-actions/verify-changed-files@v16
+        uses: tj-actions/verify-changed-files@v19
         id: verify-changed-files
         with:
           files: README.md
