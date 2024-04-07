@@ -32,7 +32,7 @@ func deviceLogin() (*ssoclient.LoginResult, error) {
 }
 
 func authCodeLogin() (*ssoclient.LoginResult, error) {
-	return ssoclient.LoginWithOIDCProxy(
+	return ssoclient.LoginWithSSOProxy(
 		"http://localhost:8000/cli-login",
 		func(loginURL string) {
 			fmt.Printf("Login at: %s\n", loginURL)

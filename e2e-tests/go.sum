@@ -359,8 +359,8 @@ github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyua
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
-github.com/mlosinsky/clisso/ssoclient v0.3.1 h1:gYSatHzRDFwtdVvuISHy2T+qsxYehptiS3fVrU3zXls=
-github.com/mlosinsky/clisso/ssoclient v0.3.1/go.mod h1:crYH2K/JTC9etybHDkkHTFQmupsxTX6Nkwy7WFh/iPg=
+github.com/mlosinsky/clisso/ssoclient v0.3.2 h1:B46LBiMFQDm18BDucvOpkweS9xLsNr992g/GkiNDxQI=
+github.com/mlosinsky/clisso/ssoclient v0.3.2/go.mod h1:crYH2K/JTC9etybHDkkHTFQmupsxTX6Nkwy7WFh/iPg=
 github.com/moby/buildkit v0.13.0-beta1.0.20231219135447-957cb50df991 h1:r80LLQ91uOLxU1ElAvrB1o8oBsph51lPzVnr7t2b200=
 github.com/moby/buildkit v0.13.0-beta1.0.20231219135447-957cb50df991/go.mod h1:6MddWPSL5jxy+W8eMMHWDOfZzzRRKWXPZqajw72YHBc=
 github.com/moby/locker v1.0.1 h1:fOXqR41zeveg4fFODix+1Ch4mj/gT0NE1XJbp/epuBg=

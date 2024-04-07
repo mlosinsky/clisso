@@ -30,7 +30,7 @@ func TestSuccessfulLogin(t *testing.T) {
 
 	require.NoError(t, err, "compose.Up()")
 
-	loginResult, err := ssoclient.LoginWithOIDCProxy(
+	loginResult, err := ssoclient.LoginWithSSOProxy(
 		"http://localhost:8000/cli-login",
 		func(loginURI string) {
 			_, err := http.Get("http://localhost:8080/realms/test/protocol/openid-connect/auth?client_id=test&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fcli-logged-in&response_type=code&scope=openid&state=fc57191d9f160ec2")
