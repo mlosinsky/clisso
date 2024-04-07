@@ -54,13 +54,13 @@ jobs:
     - name: test
       working-directory: ${{ matrix.dir }}
       run: |
-        go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage.out 2>&1 | gotestfmt
-        go tool cover -func=coverage.out -o=coverage.out
+        go test -timeout 1m -v -json ./... -covermode=count -coverprofile=${{ matrix.dir }}-coverage.out 2>&1 | gotestfmt
+        go tool cover -func=${{ matrix.dir }}-coverage.out -o=../${{ matrix.dir }}-coverage.out
 
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.dir }}-coverage
-        path: ${{ matrix.dir }}/coverage.out
+        path: ${{ matrix.dir }}-coverage.out
         retention-days: 1
         if-no-files-found: error
 
@@ -90,8 +90,8 @@ jobs:
           ls -R
           TEMP_DIR=$(mktemp -d)
           curl -sf https://gobinaries.com/github.com/AlexBeauchemin/gobadge@v0.3.0 | PREFIX=$TEMP_DIR sh
-          $TEMP_DIR/gobadge -filename=../ssoclient/coverage.out -text=ssoclient
-          $TEMP_DIR/gobadge -filename=../ssoproxy/coverage.out -text=ssoproxy
+          $TEMP_DIR/gobadge -filename=../ssoclient-coverage.out -text=ssoclient
+          $TEMP_DIR/gobadge -filename=../ssoproxy-coverage.out -text=ssoproxy
           rm -rf $TEMP_DIR
 
       - name: verify badges changed
