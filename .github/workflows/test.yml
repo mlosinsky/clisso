@@ -59,7 +59,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.dir }}-coverage
+        name: coverage
         path: ${{ matrix.dir }}/coverage.out
         retention-days: 1
         if-no-files-found: error
@@ -81,11 +81,12 @@ jobs:
       - name: load test output
         uses: actions/download-artifact@v4
         with:
-          pattern: '*-coverage'
-          merge-multiple: true
+          name: coverage
 
       - name: update badges
         run: |
+          ls
+          ls -R
           TEMP_DIR=$(mktemp -d)
           curl -sf https://gobinaries.com/github.com/AlexBeauchemin/gobadge@v0.3.0 | PREFIX=$TEMP_DIR sh
           $TEMP_DIR/gobadge -filename=../ssoclient/coverage.out -text=ssoclient
