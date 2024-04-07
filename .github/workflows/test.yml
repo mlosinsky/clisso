@@ -57,7 +57,7 @@ jobs:
         go test -timeout 1m -v -json ./... -covermode=count -coverprofile=coverage.out 2>&1 | gotestfmt
         go tool cover -func=coverage.out -o=coverage.out
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: coverage
         path: ${{ matrix.dir }}/coverage.out
@@ -77,13 +77,12 @@ jobs:
           fetch-depth: 0 # must be set to be able to push
 
       - name: load test output
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: coverage
 
       - name: update badges
         run: |
-          cat coverage-ssoproxy.out
           TEMP_DIR=$(mktemp -d)
           curl -sf https://gobinaries.com/github.com/AlexBeauchemin/gobadge@v0.3.0 | PREFIX=$TEMP_DIR sh
           $TEMP_DIR/gobadge -filename=../ssoclient/coverage.out -text=ssoclient
