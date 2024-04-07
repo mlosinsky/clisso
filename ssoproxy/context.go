@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// Configuration object for OpenID Connect
 type OIDCConfig struct {
 	BaseURI          string
 	RedirectURI      string
@@ -31,6 +32,7 @@ type Context struct {
 	LoginTimeout time.Duration
 }
 
+// Internal type returned to functions after user login. Err must be checked before using other attributes.
 type loginResult struct {
 	accessToken  string
 	refreshToken string
@@ -38,6 +40,7 @@ type loginResult struct {
 	err          error
 }
 
+// Creates a new context, this context needs to be shared between the login and redirect handlers.
 func NewContext(oidcConfig OIDCConfig) *Context {
 	return &Context{
 		oidcConfig,
@@ -50,6 +53,7 @@ func NewContext(oidcConfig OIDCConfig) *Context {
 	}
 }
 
+// Initiates login flow for request id, waits for its login result and returns it.
 func (ctx *Context) initiateLogin(reqId string, handler func(*loginResult)) {
 	ctx.requestsMutex.Lock()
 	ctx.requests[reqId] = make(chan *loginResult)
@@ -66,7 +70,7 @@ func (ctx *Context) initiateLogin(reqId string, handler func(*loginResult)) {
 	delete(ctx.requests, reqId)
 }
 
-// Writes tokens to session of request id, if there is no such session returns error
+// Writes tokens to session of request id, if there is no such session returns error.
 func (ctx *Context) onLoginSuccess(reqId, accessToken, refreshToken string, expiration int) error {
 	if _, contains := ctx.requests[reqId]; !contains {
 		return errors.New("user's session id does not exist in OIDC context")
@@ -81,7 +85,7 @@ func (ctx *Context) onLoginSuccess(reqId, accessToken, refreshToken string, expi
 	return nil
 }
 
-// Writes given error to session of request id, if there is no such session does nothing
+// Writes given error to session of request id, if there is no such session does nothing.
 func (ctx *Context) onLoginError(reqId string, err error) {
 	if _, contains := ctx.requests[reqId]; !contains {
 		return

@@ -18,13 +18,13 @@ type proxyTokensEvent struct {
 }
 
 const eventAuthURI = "auth-uri"
-const eventOIDCTokens = "oidc-tokens"
+const eventLoggedIn = "logged-in"
 const eventError = "error"
 
 // Starts the login process using a proxy server with handlers from ssoproxy.
 // The proxy first returns a configured login URI that has to be used in order for the login to succeed.
 // After successful login OIDC access and refresh tokens are returned.
-func LoginWithOIDCProxy(
+func LoginWithSSOProxy(
 	proxyLoginURI string,
 	onLoginURIReceived func(loginURI string),
 ) (*LoginResult, error) {
@@ -42,7 +42,7 @@ func LoginWithOIDCProxy(
 		func(event, data string) error {
 			if event == eventAuthURI {
 				onLoginURIReceived(data)
-			} else if event == eventOIDCTokens {
+			} else if event == eventLoggedIn {
 				if err := json.Unmarshal([]byte(data), &tokenEvent); err != nil {
 					return errors.New("received access and refresh token in invalid format")
 				}
@@ -77,11 +77,6 @@ func consumeSSEFromHTTPEventStream(
 		twoLineEnds := bytes.Index(data, []byte("\n\n"))
 		if twoLineEnds >= 0 {
 			return twoLineEnds + 2, data[0:twoLineEnds], nil
-		}
-		// if scanner is at EOF hand in the rest of the data
-		// TODO: the scanner will always receive a whole event, is this necessary?
-		if atEOF {
-			return len(data), data, nil
 		}
 		return 0, nil, nil
 	})

@@ -41,7 +41,7 @@ func TestOIDCLoginHandlerSuccessfulLogin(t *testing.T) {
 				assert.NotEmpty(t, reqId)
 				// mock a redirect from IdP
 				_ = context.onLoginSuccess(reqId, "mock-access-token", "mock-refresh-token", 600)
-			} else if event == "oidc-tokens" && eventCounter == 1 {
+			} else if event == eventLoggedIn && eventCounter == 1 {
 				var tokensEvent tokensEvent
 				err := json.Unmarshal([]byte(data), &tokensEvent)
 				assert.NoError(t, err, "Access and refresh token could not be deserialized")

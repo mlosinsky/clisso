@@ -27,14 +27,18 @@ const reqIdLength = 8
 const reqIdLogArg = "req-id"
 
 const eventAuthURI = "auth-uri"
-const eventOIDCTokens = "oidc-tokens"
+const eventLoggedIn = "logged-in"
 const eventError = "error"
 
 // Handles login process from an application. Sends text/event-stream response and
 // writes Server-Sent Events to it during the login process.
 // OIDCRedirectHandler must be used with this handler.
 //
-// Events can be of 3 types: auth-uri, oidc-tokens and error.
+// Events can be of 3 types:
+//
+//	"auth-uri" // data = "https://some-sso.com/auth"
+//	"logged-in" // data = `{"access_token": "access", "refresh_token": "refresh", "expires_in": 3600}` as JSON
+//	"error" // data = "Error description"
 func OIDCLoginHandler(ctx *Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set proper SSE headers
@@ -80,12 +84,12 @@ func OIDCLoginHandler(ctx *Context) http.Handler {
 				return
 			}
 			ctx.Logger.Info("Sending successful login result to client", reqIdLogArg, reqId)
-			sendSSEEvent(w, ctx, string(eventData), eventOIDCTokens)
+			sendSSEEvent(w, ctx, string(eventData), eventLoggedIn)
 		})
 	})
 }
 
-// Handles redirect from Identity Provider.
+// Handles redirect from OIDC Identity Provider.
 // Must serve on OIDC Redirect URI, uses OIDC authorization code flow.
 func OIDCRedirectHandler(ctx *Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +139,7 @@ func OIDCRedirectHandler(ctx *Context) http.Handler {
 	})
 }
 
-// Gets access and refresh tokens from OIDC provider
+// Gets access and refresh tokens from OIDC provider.
 func oidcGetTokens(authorizationCode string, config OIDCConfig) (*tokenResponse, error) {
 	data := url.Values{}
 	data.Set("code", authorizationCode)
@@ -160,14 +164,14 @@ func oidcGetTokens(authorizationCode string, config OIDCConfig) (*tokenResponse,
 	return tokens, nil
 }
 
-// Writes Server-Sent Event to response body and sends it to client
+// Writes Server-Sent Event to response body and sends it to client.
 func sendSSEEvent(w http.ResponseWriter, ctx *Context, data string, event string) {
 	ctx.Logger.Debug(fmt.Sprintf("Sending SSE event '%s' with data '%s'", event, data))
 	fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, data)
 	w.(http.Flusher).Flush()
 }
 
-// Generates a random request id
+// Generates a random request id.
 func generateReqId() (string, error) {
 	randBytes := make([]byte, reqIdLength)
 	if _, err := rand.Read(randBytes); err != nil {
