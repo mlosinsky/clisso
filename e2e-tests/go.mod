@@ -3,8 +3,10 @@ module github.com/mlosinsky/clisso/e2e_tests
 go 1.21.6
 
 require (
-	github.com/mlosinsky/clisso/ssoclient v0.1.1
+	github.com/chromedp/chromedp v0.9.5
+	github.com/mlosinsky/clisso/ssoclient v0.3.1
 	github.com/stretchr/testify v1.9.0
+	github.com/testcontainers/testcontainers-go v0.29.1
 	github.com/testcontainers/testcontainers-go/modules/compose v0.29.1
 )
 
@@ -33,7 +35,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chromedp/cdproto v0.0.0-20240328024531-fe04f09ede24 // indirect
-	github.com/chromedp/chromedp v0.9.5 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/compose-spec/compose-go/v2 v2.0.0-rc.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
@@ -137,7 +138,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/testcontainers/testcontainers-go v0.29.1 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/tilt-dev/fsnotify v1.4.8-0.20220602155310-fff9c274a375 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
