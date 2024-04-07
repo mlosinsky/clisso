@@ -2,8 +2,8 @@
 
 ### Test Coverage
 
-![ssoproxy](https://img.shields.io/badge/ssoproxy-100.0%25-brightgreen)
-![ssoclient](https://img.shields.io/badge/ssoclient-100.0%25-brightgreen)
+![ssoproxy](https://img.shields.io/badge/ssoproxy-84.5%25-brightgreen)
+![ssoclient](https://img.shields.io/badge/ssoclient-41.4%25-yellow)
 
 Features that need to be implemented before v1:
 
