@@ -8,7 +8,6 @@ on:
     branches: 
       - main
 
-# TODO: add e2e test ci
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -60,6 +59,27 @@ jobs:
         path: ${{ matrix.dir }}-coverage.out
         retention-days: 1
         if-no-files-found: error
+  
+  e2e-test:
+    name: E2E tests
+    runs-on: ubuntu-latest # docker env provided by Github Actions
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: e2e-tests/go.mod
+        cache: false
+
+    - name: install gotestfmt
+      uses: GoTestTools/gotestfmt-action@v2
+      with:
+        version: v2.5.0
+
+    - name: test
+      working-directory: e2e-tests
+      run: |
+        go test -timeout 5m -v -json ./... 2>&1 | gotestfmt
 
   update-coverage-badges:
     name: update coverage badges
@@ -69,6 +89,7 @@ jobs:
       cancel-in-progress: true
     needs:
       - test
+      - e2e-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
