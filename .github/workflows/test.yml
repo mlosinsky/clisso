@@ -32,8 +32,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: 
-        dir: ['ssoclient', 'ssoproxy']
+        dir: ['ssoclient', 'ssoproxy', 'e2e-tests']
       fail-fast: false
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
 
@@ -50,7 +51,7 @@ jobs:
     - name: test
       working-directory: ${{ matrix.dir }}
       run: |
-        go test -timeout 1m -v -json ./... -covermode=count -coverprofile=${{ matrix.dir }}-coverage.out 2>&1 | gotestfmt
+        go test -timeout 10m -v -json ./... -covermode=count -coverprofile=${{ matrix.dir }}-coverage.out 2>&1 | gotestfmt
         go tool cover -func=${{ matrix.dir }}-coverage.out -o=../${{ matrix.dir }}-coverage.out
 
     - uses: actions/upload-artifact@v4
@@ -59,28 +60,6 @@ jobs:
         path: ${{ matrix.dir }}-coverage.out
         retention-days: 1
         if-no-files-found: error
-  
-  e2e-test:
-    name: E2E tests
-    runs-on: ubuntu-latest # docker env provided by Github Actions
-    timeout-minutes: 10
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: actions/setup-go@v5
-      with:
-        go-version-file: e2e-tests/go.mod
-        cache: false
-
-    - name: install gotestfmt
-      uses: GoTestTools/gotestfmt-action@v2
-      with:
-        version: v2.5.0
-
-    - name: test
-      working-directory: e2e-tests
-      run: |
-        go test -timeout 5m -v -json ./... 2>&1 | gotestfmt
 
   update-coverage-badges:
     name: update coverage badges
@@ -90,7 +69,6 @@ jobs:
       cancel-in-progress: true
     needs:
       - test
-      - e2e-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
