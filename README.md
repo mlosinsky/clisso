@@ -105,14 +105,3 @@ go run ./examples/cli/main.go login \
   -client-id test
 # TODO: show example output - login uri, usercode and result
 ```
-
-#### Features that need to be implemented before v1:
-
-- [x] write tests for ssoclient
-- [x] e2e test with keycloak and vault
-- [ ] e2e test with different IdP (not keycloak, maybe dex?)
-- [x] CI - test ssoproxy(+coverage), ssoclient(+coverage), e2e_tests
-- [x] refactor and write doc strings
-- [x] README.md - **info**, **install**, how to use, show coverage
-- [x] refactor CLI example and proxy example
-- [x] cleanup/remove local/ directory
