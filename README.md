@@ -80,28 +80,17 @@ The following parameters can be configured on _OIDC context_:
 ### Example
 
 ```bash
-# This example needs a Keycloak instance running in the same docker network on port 8080 with container name 'keycloak'
-# Example Keycloak config can be found in e2e-tests/docker-compose.yaml
-docker build ./examples/proxy -t clisso/proxy:latest
-# Hosts must be set correctly, when --network=host isn't used (localhost in container isn't localhost on host)
-# - base URI: is accessed from SSO Proxy -> use container name ('keycloak')
-# - redirect URI: is set to 'Location' header when keycloak redirects after login -> interpreted by the browser -> localhost
-# - authorization URI: is accessed from the browser -> localhost
-docker run --rm -it -p '8000:8000' \
-  -env HTTP_PORT=8000 \
-  -env OIDC_BASE_URI="http://keycloak:8080/realms/test/protocol/openid-connect" \
-  -env OIDC_REDIRECT_URI="http://localhost:8000/cli-logged-in" \
-  -env OIDC_AUTHORIZATION_URI="http://localhost:8080/realms/test/protocol/openid-connect/auth?response_type=code&scope=openid&client_id=test&redirect_uri=http://localhost:8000/cli-logged-in" \
-  -env OIDC_CLIENT_ID=test \
-  -env OIDC_CLIENT_SECRET=YscDX1J39s7PDBbpBJWsGyOLdl8TJEUK
-
+docker compose up
 go run ./examples/cli/main.go login \
   -grant code \
   -login-uri "http://localhost:8000/cli-login"
-# TODO: show example output - login uri and result
+# login with username: mlosinsky, password: mlosinsky
+# Outputs: &{AccessToken:eyJhb... RefreshToken:eyJhb... Expiration:300}
 go run ./examples/cli/main.go login \
   -grant device \
-  -oidc-uri "http://localhost:8080/realms/test/protocol/openid-connect/token" \
+  -token-uri "http://localhost:8080/realms/test/protocol/openid-connect/token" \
+  -device-uri "http://localhost:8080/realms/test/protocol/openid-connect/auth/device" \
   -client-id test
-# TODO: show example output - login uri, usercode and result
+# login with user code and username: mlosinsky, password: mlosinsky
+# Outputs: &{AccessToken:eyJhb... RefreshToken:eyJhb... Expiration:300}
 ```

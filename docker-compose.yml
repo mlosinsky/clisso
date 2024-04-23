@@ -10,7 +10,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: root
     volumes:
-      - ./e2e-tests/keycloak-realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./e2e-tests/keycloak/keycloak-realm-export.json:/opt/keycloak/data/import/realm-export.json
     command: start-dev --import-realm
   proxy:
     build:
