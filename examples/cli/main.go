@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -9,69 +9,73 @@ import (
 	"github.com/mlosinsky/clisso/ssoclient"
 )
 
-type ctxKey string
-
-const accessTokenKey ctxKey = "access_token"
-
-func vaultAuth(loginContext context.Context) {
-	fmt.Println()
-	fmt.Println("Access token:")
-	fmt.Println(loginContext.Value(accessTokenKey))
-}
-
-func deviceLogin() (*ssoclient.LoginResult, error) {
+func deviceLogin(oidcBaseURI, clientId string) (*ssoclient.LoginResult, error) {
 	return ssoclient.LoginWithDeviceAuth(
-		"http://localhost:8080/realms/test/protocol/openid-connect/auth/device",
-		"http://localhost:8080/realms/test/protocol/openid-connect/token",
-		"test",
+		ssoclient.DeviceAuthConfig{
+			DeviceAuthURI: fmt.Sprintf("%s/device/code", oidcBaseURI),
+			TokenURI:      fmt.Sprintf("%s/token", oidcBaseURI),
+			ClientId:      clientId,
+		},
 		func(verificationURI, userCode string) {
-			fmt.Println("Login URL: " + verificationURI)
-			fmt.Println("User code: " + userCode)
+			fmt.Println("Login at: ", verificationURI)
+			fmt.Println("User code:", userCode)
 		},
 	)
 }
 
-func authCodeLogin() (*ssoclient.LoginResult, error) {
+func proxyLogin(proxyLoginURI string) (*ssoclient.LoginResult, error) {
 	return ssoclient.LoginWithSSOProxy(
-		"http://localhost:8000/cli-login",
+		proxyLoginURI,
 		func(loginURL string) {
-			fmt.Printf("Login at: %s\n", loginURL)
+			fmt.Println("Login at:", loginURL)
 		},
 	)
+}
+
+func loginCommand(grant, oidcBaseURI, clientId, proxyLoginURI string) error {
+	if grant == "device" {
+		if oidcBaseURI == "" || clientId == "" {
+			return errors.New("'oidc-uri' and 'client-id' are required for device auth")
+		}
+		if loginResult, err := deviceLogin(oidcBaseURI, clientId); err != nil {
+			return err
+		} else {
+			fmt.Printf("%+v\n", loginResult)
+		}
+	} else if grant == "code" {
+		if proxyLoginURI == "" {
+			return errors.New("'login-uri' is required for code auth")
+		}
+		if loginResult, err := proxyLogin(proxyLoginURI); err != nil {
+			return err
+		} else {
+			fmt.Printf("%+v\n", loginResult)
+		}
+	} else {
+		return fmt.Errorf("invalid 'grant': %s", grant)
+	}
+	return nil
 }
 
 func main() {
 	loginCmd := flag.NewFlagSet("login", flag.ExitOnError)
 	grant := loginCmd.String("grant", "code", "SSO Authentication grant (code/device)")
+	oidcBaseURI := loginCmd.String("oidc-uri", "", "Base URI for OpenID Connect API (used only for 'device' grant)")
+	clientId := loginCmd.String("client-id", "", "OpenID Connect client id (used only for 'device' grant)")
+	proxyLoginURI := loginCmd.String("login-uri", "", "SSO Proxy login URI (used only for 'code' grant)")
 
 	if len(os.Args) < 2 {
-		fmt.Println("CLI utility for SSO login")
+		fmt.Println("CLI SSO login")
 		os.Exit(0)
 	}
 
 	switch os.Args[1] {
 	case "login":
 		loginCmd.Parse(os.Args[2:])
-		var loginResult *ssoclient.LoginResult
-		var err error
-		if *grant == "device" {
-			loginResult, err = deviceLogin()
-		} else if *grant == "code" {
-			loginResult, err = authCodeLogin()
-		} else {
-			fmt.Printf("Invalid value for arg 'grant': %s\n", *grant)
+		if err := loginCommand(*grant, *oidcBaseURI, *clientId, *proxyLoginURI); err != nil {
+			fmt.Println(err.Error())
 			os.Exit(1)
 		}
-		if err != nil {
-			fmt.Printf("Could not login: %s\n", err.Error())
-			os.Exit(1)
-		}
-
-		// TODO: implement refreshing token
-		// TODO: implement refresh token handler in ssoproxy
-		ctx := context.Background()
-		ctx = context.WithValue(ctx, accessTokenKey, loginResult.AccessToken)
-		vaultAuth(ctx)
 	default:
 		flag.PrintDefaults()
 		os.Exit(1)

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 type tokensEvent struct {
@@ -141,19 +140,13 @@ func OIDCRedirectHandler(ctx *Context) http.Handler {
 
 // Gets access and refresh tokens from OIDC provider.
 func oidcGetTokens(authorizationCode string, config OIDCConfig) (*tokenResponse, error) {
-	data := url.Values{}
-	data.Set("code", authorizationCode)
-	data.Set("client_id", config.ClientId)
-	data.Set("client_secret", config.ClientSecret)
-	data.Set("redirect_uri", config.RedirectURI)
-	data.Set("grant_type", "authorization_code")
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/token", config.BaseURI), strings.NewReader(data.Encode()))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	res, err := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.PostForm(fmt.Sprintf("%s/token", config.BaseURI), url.Values{
+		"code":          {authorizationCode},
+		"client_id":     {config.ClientId},
+		"client_secret": {config.ClientSecret},
+		"redirect_uri":  {config.RedirectURI},
+		"grant_type":    {"authorization_code"},
+	})
 	if err != nil {
 		return nil, err
 	}

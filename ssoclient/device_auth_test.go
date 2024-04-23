@@ -15,9 +15,11 @@ func TestLoginWithDeviceAuthWithoutPollingSuccess(t *testing.T) {
 	t.Parallel()
 	mockOAuthServer := createMockOAuthServer("mock-client-id", 1, 1)
 	loginResult, err := LoginWithDeviceAuth(
-		fmt.Sprintf("%s/auth/device", mockOAuthServer.URL),
-		fmt.Sprintf("%s/token", mockOAuthServer.URL),
-		"mock-client-id",
+		DeviceAuthConfig{
+			DeviceAuthURI: fmt.Sprintf("%s/auth/device", mockOAuthServer.URL),
+			TokenURI:      fmt.Sprintf("%s/token", mockOAuthServer.URL),
+			ClientId:      "mock-client-id",
+		},
 		func(verificationURI, userCode string) {
 			_, err := http.Get(fmt.Sprintf("%s?user-code=mock-user-code", verificationURI))
 			require.NoError(t, err)
@@ -32,9 +34,11 @@ func TestLoginWithDeviceAuthWithPollingSuccess(t *testing.T) {
 	// client needs to poll 3 times after user login
 	mockOAuthServer := createMockOAuthServer("mock-client-id", 1, 3)
 	loginResult, err := LoginWithDeviceAuth(
-		fmt.Sprintf("%s/auth/device", mockOAuthServer.URL),
-		fmt.Sprintf("%s/token", mockOAuthServer.URL),
-		"mock-client-id",
+		DeviceAuthConfig{
+			DeviceAuthURI: fmt.Sprintf("%s/auth/device", mockOAuthServer.URL),
+			TokenURI:      fmt.Sprintf("%s/token", mockOAuthServer.URL),
+			ClientId:      "mock-client-id",
+		},
 		func(verificationURI, userCode string) {
 			_, err := http.Get(fmt.Sprintf("%s?user-code=mock-user-code", verificationURI))
 			require.NoError(t, err)

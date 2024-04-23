@@ -1,0 +1,24 @@
+issuer: http://localhost:5556
+storage:
+  type: memory
+web:
+  http: 0.0.0.0:5556
+expiry:
+  deviceRequests: "2m"
+oauth2:
+  responseTypes: [ "code" ]
+  skipApprovalScreen: false
+staticClients:
+  - id: sso-proxy
+    name: 'CLI SSO Proxy E2E test'
+    secret: safoaijewgnbioevnasdf
+    redirectURIs:
+      - 'http://localhost:8001/cli-logged-in'
+      - '/device/callback'
+enablePasswordDB: true
+staticPasswords:
+  - email: "mlosinsky@test.com"
+    # bcrypt hash of the string "password": $(echo password | htpasswd -BinC 10 admin | cut -d: -f2)
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    username: "mlosinsky"
+    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"

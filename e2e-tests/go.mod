@@ -2,10 +2,8 @@ module github.com/mlosinsky/clisso/e2e_tests
 
 go 1.21.6
 
-// TODO: use ssoclient with relative path
 require (
 	github.com/chromedp/chromedp v0.9.5
-	github.com/mlosinsky/clisso/ssoclient v0.3.2
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.29.1
 	github.com/testcontainers/testcontainers-go/modules/compose v0.29.1

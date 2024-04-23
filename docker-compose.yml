@@ -1,0 +1,25 @@
+# This is an example configuration with preconfigured Keycloak
+# Similar configurations are used in e2e-tests
+services:
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:23.0
+    ports:
+      - "8080:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: root
+    volumes:
+      - ./e2e-tests/keycloak-realm-export.json:/opt/keycloak/data/import/realm-export.json
+    command: start-dev --import-realm
+  proxy:
+    build:
+      dockerfile: Dockerfile.proxy
+    network_mode: host
+    environment:
+      HTTP_PORT: 8000
+      OIDC_BASE_URI: http://localhost:8080/realms/test/protocol/openid-connect
+      OIDC_REDIRECT_URI: http://localhost:8000/cli-logged-in
+      OIDC_AUTHORIZATION_URI: http://localhost:8080/realms/test/protocol/openid-connect/auth?response_type=code&scope=openid&client_id=test&redirect_uri=http://localhost:8000/cli-logged-in
+      OIDC_CLIENT_ID: test
+      OIDC_CLIENT_SECRET: YscDX1J39s7PDBbpBJWsGyOLdl8TJEUK

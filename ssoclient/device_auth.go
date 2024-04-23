@@ -7,9 +7,19 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
+
+type DeviceAuthConfig struct {
+	// URI to OAuth device auth endpoint
+	DeviceAuthURI string
+	// URI to OAuth token endpoint
+	TokenURI string
+	// OAuth client id
+	ClientId string
+	// Optional OAuth scope, uses "openid" by default and adds this value to it
+	Scope string
+}
 
 type deviceAuthResponse struct {
 	DeviceCode              string `json:"device_code"`
@@ -48,12 +58,10 @@ const expiredTokenError = "expired_token"
 //
 // After successful login OIDC access and refresh tokens are returned.
 func LoginWithDeviceAuth(
-	OAuthDeviceAuthURI string,
-	OAuthTokenURI string,
-	clientId string,
+	config DeviceAuthConfig,
 	verificationURIReceived func(verificationURI, userCode string),
 ) (*LoginResult, error) {
-	deviceRes, err := callDeviceAuthorizationEndpoint(OAuthDeviceAuthURI, clientId)
+	deviceRes, err := callDeviceAuthorizationEndpoint(config.DeviceAuthURI, config.ClientId, config.Scope)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +72,8 @@ func LoginWithDeviceAuth(
 	}
 	tokenRes, err := pollTokensEndpoint(
 		deviceRes.DeviceCode,
-		clientId,
-		OAuthTokenURI,
+		config.ClientId,
+		config.TokenURI,
 		deviceRes.Interval,
 		deviceRes.ExpiresIn,
 	)
@@ -80,15 +88,11 @@ func LoginWithDeviceAuth(
 }
 
 // Issues an HTTP GET for Device Authorization.
-func callDeviceAuthorizationEndpoint(OAuthDeviceAuthURI, clientId string) (*deviceAuthResponse, error) {
-	data := url.Values{}
-	data.Set("client_id", clientId)
-	req, err := http.NewRequest("POST", OAuthDeviceAuthURI, strings.NewReader(data.Encode()))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	res, err := http.DefaultClient.Do(req)
+func callDeviceAuthorizationEndpoint(OAuthDeviceAuthURI, clientId, scope string) (*deviceAuthResponse, error) {
+	res, err := http.PostForm(OAuthDeviceAuthURI, url.Values{
+		"client_id": {clientId},
+		"scope":     {fmt.Sprintf("%s openid", scope)},
+	})
 	if err != nil {
 		return nil, errors.Join(errors.New("failed to execute Device Authorization request"), err)
 	}
@@ -116,27 +120,18 @@ func pollTokensEndpoint(
 	pollInterval int,
 	maxPollTime int,
 ) (*tokenSuccessResponse, error) {
-	reqBody := url.Values{}
-	reqBody.Set("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
-	reqBody.Set("device_code", deviceCode)
-	reqBody.Set("client_id", clientId)
-	req, err := http.NewRequest("POST", OAuthTokenURI, strings.NewReader(reqBody.Encode()))
-	if err != nil {
-		return nil, errors.Join(errors.New("login attempt failed while preparing request body for /token endpoint polling"), err)
-	}
 	timePassed := 0
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	for timePassed <= maxPollTime {
 		time.Sleep(time.Second * time.Duration(pollInterval))
 		timePassed += pollInterval
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := http.PostForm(OAuthTokenURI, url.Values{
+			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
+			"device_code": {deviceCode},
+			"client_id":   {clientId},
+		})
 		if err != nil {
 			return nil, errors.Join(errors.New("an error occurred while after polling /token endpoint"), err)
-		}
-		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusBadRequest {
-			// received unexpected status code - Device Authorization RFC specifies only 200 and 400 codes
-			return nil, fmt.Errorf("IdP responded with unexpected status code %d while polling /token endpoint", res.StatusCode)
 		}
 
 		rawResBody, err := io.ReadAll(res.Body)
