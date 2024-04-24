@@ -27,9 +27,6 @@ func main() {
 	context.Logger = slog.Default()
 	http.Handle("/cli-login", ssoproxy.OIDCLoginHandler(context))
 	http.Handle("/cli-logged-in", ssoproxy.OIDCRedirectHandler(context))
-	http.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world"))
-	})
 
 	port, err := strconv.Atoi(os.Getenv("HTTP_PORT"))
 	if err != nil {
