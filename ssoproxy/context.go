@@ -67,7 +67,9 @@ func (ctx *Context) initiateLogin(reqId string, handler func(*loginResult)) {
 		ctx.Logger.Warn("User's login session timed out")
 		handler(&loginResult{err: errors.New("user's login session timed out")})
 	}
+	ctx.requestsMutex.Lock()
 	delete(ctx.requests, reqId)
+	ctx.requestsMutex.Unlock()
 }
 
 // Writes tokens to session of request id, if there is no such session returns error.
