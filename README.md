@@ -1,7 +1,7 @@
 # Go Single Sign-On for Console applications
 
 ![ssoclient/coverage](https://img.shields.io/badge/ssoclient%2Fcoverage-73.5%25-brightgreen)
-![ssoproxy/coverage](https://img.shields.io/badge/ssoproxy%2Fcoverage-84.0%25-brightgreen)
+![ssoproxy/coverage](https://img.shields.io/badge/ssoproxy%2Fcoverage-84.3%25-brightgreen)
 
 This project provides SSO functionality for console applications. Currently, 2 authentication methods are supported:
 
