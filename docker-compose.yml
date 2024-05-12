@@ -15,10 +15,11 @@ services:
   proxy:
     build:
       dockerfile: Dockerfile.proxy
-    network_mode: host
+    ports:
+      - "8000:8000"
     environment:
       HTTP_PORT: 8000
-      OIDC_BASE_URI: http://localhost:8080/realms/test/protocol/openid-connect
+      OIDC_BASE_URI: http://keycloak:8080/realms/test/protocol/openid-connect
       OIDC_REDIRECT_URI: http://localhost:8000/cli-logged-in
       OIDC_AUTHORIZATION_URI: http://localhost:8080/realms/test/protocol/openid-connect/auth?response_type=code&scope=openid&client_id=test&redirect_uri=http://localhost:8000/cli-logged-in
       OIDC_CLIENT_ID: test
